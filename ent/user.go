@@ -24,6 +24,27 @@ type User struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the UserQuery when eager-loading is set.
+	Edges UserEdges `json:"edges"`
+}
+
+// UserEdges holds the relations/edges for other nodes in the graph.
+type UserEdges struct {
+	// Books holds the value of the books edge.
+	Books []*Book `json:"books,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// BooksOrErr returns the Books value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) BooksOrErr() ([]*Book, error) {
+	if e.loadedTypes[0] {
+		return e.Books, nil
+	}
+	return nil, &NotLoadedError{edge: "books"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -85,6 +106,11 @@ func (u *User) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QueryBooks queries the "books" edge of the User entity.
+func (u *User) QueryBooks() *BookQuery {
+	return (&UserClient{config: u.config}).QueryBooks(u)
 }
 
 // Update returns a builder for updating this User.

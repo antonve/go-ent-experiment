@@ -32,7 +32,26 @@ func ExampleEnt() {
 		log.Fatalf("failed to create a user: %v", err)
 	}
 
-	fmt.Println(user1.Username)
+	_, err = client.Book.Create().
+		SetName("The Phoenix Project").
+		SetUser(user1).
+		Save(ctx)
+	if err != nil {
+		log.Fatalf("failed to create a book: %v", err)
+	}
+
+	_, err = client.Book.Create().
+		SetName("The Unicorn Project").
+		Save(ctx)
+	if err != nil {
+		log.Fatalf("failed to create a book: %v", err)
+	}
+
+	res, err := user1.QueryBooks().All(ctx)
+	if err != nil {
+		log.Fatalf("failed to query books: %v", err)
+	}
+	fmt.Println(res)
 	// Output:
-	// anton
+	// [Book(id=1, name=The Phoenix Project)]
 }

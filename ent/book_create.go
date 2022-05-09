@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/antonve/go-ent-experiment/ent/book"
+	"github.com/antonve/go-ent-experiment/ent/user"
 )
 
 // BookCreate is the builder for creating a Book entity.
@@ -23,6 +24,25 @@ type BookCreate struct {
 func (bc *BookCreate) SetName(s string) *BookCreate {
 	bc.mutation.SetName(s)
 	return bc
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (bc *BookCreate) SetUserID(id int) *BookCreate {
+	bc.mutation.SetUserID(id)
+	return bc
+}
+
+// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
+func (bc *BookCreate) SetNillableUserID(id *int) *BookCreate {
+	if id != nil {
+		bc = bc.SetUserID(*id)
+	}
+	return bc
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (bc *BookCreate) SetUser(u *User) *BookCreate {
+	return bc.SetUserID(u.ID)
 }
 
 // Mutation returns the BookMutation object of the builder.
@@ -132,6 +152,26 @@ func (bc *BookCreate) createSpec() (*Book, *sqlgraph.CreateSpec) {
 			Column: book.FieldName,
 		})
 		_node.Name = value
+	}
+	if nodes := bc.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   book.UserTable,
+			Columns: []string{book.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.user_books = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

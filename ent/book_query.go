@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/antonve/go-ent-experiment/ent/book"
 	"github.com/antonve/go-ent-experiment/ent/predicate"
+	"github.com/antonve/go-ent-experiment/ent/user"
 )
 
 // BookQuery is the builder for querying Book entities.
@@ -24,6 +25,9 @@ type BookQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Book
+	// eager-loading edges.
+	withUser *UserQuery
+	withFKs  bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +62,28 @@ func (bq *BookQuery) Unique(unique bool) *BookQuery {
 func (bq *BookQuery) Order(o ...OrderFunc) *BookQuery {
 	bq.order = append(bq.order, o...)
 	return bq
+}
+
+// QueryUser chains the current query on the "user" edge.
+func (bq *BookQuery) QueryUser() *UserQuery {
+	query := &UserQuery{config: bq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := bq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := bq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(book.Table, book.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, book.UserTable, book.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(bq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Book entity from the query.
@@ -241,11 +267,23 @@ func (bq *BookQuery) Clone() *BookQuery {
 		offset:     bq.offset,
 		order:      append([]OrderFunc{}, bq.order...),
 		predicates: append([]predicate.Book{}, bq.predicates...),
+		withUser:   bq.withUser.Clone(),
 		// clone intermediate query.
 		sql:    bq.sql.Clone(),
 		path:   bq.path,
 		unique: bq.unique,
 	}
+}
+
+// WithUser tells the query-builder to eager-load the nodes that are connected to
+// the "user" edge. The optional arguments are used to configure the query builder of the edge.
+func (bq *BookQuery) WithUser(opts ...func(*UserQuery)) *BookQuery {
+	query := &UserQuery{config: bq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	bq.withUser = query
+	return bq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,9 +349,19 @@ func (bq *BookQuery) prepareQuery(ctx context.Context) error {
 
 func (bq *BookQuery) sqlAll(ctx context.Context) ([]*Book, error) {
 	var (
-		nodes = []*Book{}
-		_spec = bq.querySpec()
+		nodes       = []*Book{}
+		withFKs     = bq.withFKs
+		_spec       = bq.querySpec()
+		loadedTypes = [1]bool{
+			bq.withUser != nil,
+		}
 	)
+	if bq.withUser != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, book.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Book{config: bq.config}
 		nodes = append(nodes, node)
@@ -324,6 +372,7 @@ func (bq *BookQuery) sqlAll(ctx context.Context) ([]*Book, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, bq.driver, _spec); err != nil {
@@ -332,6 +381,36 @@ func (bq *BookQuery) sqlAll(ctx context.Context) ([]*Book, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := bq.withUser; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*Book)
+		for i := range nodes {
+			if nodes[i].user_books == nil {
+				continue
+			}
+			fk := *nodes[i].user_books
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(user.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "user_books" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.User = n
+			}
+		}
+	}
+
 	return nodes, nil
 }
 
