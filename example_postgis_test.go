@@ -36,12 +36,20 @@ func ExamplePostGIS() {
 	}
 
 	// Create restaurants
-	coco := createRestaurant(client, "CoCo Ichibanya Ebisu", 35.64699825984844, 139.71194575396922)
+	_ = createRestaurant(client, "CoCo Ichibanya Ebisu", 35.64699825984844, 139.71194575396922)
+	_ = createRestaurant(client, "SHAKE SHACK Ebisu", 35.64669248211187, 139.70949784477963)
+	_ = createRestaurant(client, "Ichiran Ramen Shinjuku", 35.69079988476277, 139.70286473414785)
+	_ = createRestaurant(client, "Torikizoku Shinjuku", 35.68918337273537, 139.70249991934935)
 
-	fmt.Println(coco.Name)
+	// List all restaurants
+	restaurants, err := client.Restaurant.Query().All(ctx)
+	if err != nil {
+		log.Fatalf("could not fetch restaurant list: %v", err)
+	}
+	fmt.Println("restaurants length", len(restaurants))
 
 	// Output:
-	// CoCo Ichibanya Ebisu
+	// restaurants length 4
 }
 
 func createRestaurant(client *ent.Client, name string, long, lat float64) *ent.Restaurant {

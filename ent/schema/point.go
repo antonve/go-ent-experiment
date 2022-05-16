@@ -11,18 +11,18 @@ import (
 )
 
 // A Point consists of (X,Y) or (Lat, Lon) coordinates
-// and it is stored in MySQL the POINT spatial data type.
 type Point [2]float64
 
 // Scan implements the Scanner interface.
 func (p *Point) Scan(value interface{}) error {
-	bin, ok := value.([]byte)
+	str, ok := value.(string)
+	bin := []byte(str)
 	if !ok {
 		return fmt.Errorf("invalid binary value for point")
 	}
 	var op orb.Point
-	if err := wkb.Scanner(&op).Scan(bin[4:]); err != nil {
-		return err
+	if err := wkb.Scanner(&op).Scan(bin); err != nil {
+		return fmt.Errorf("could not scan wkb: %v", err)
 	}
 	p[0], p[1] = op.X(), op.Y()
 	return nil
