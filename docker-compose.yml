@@ -10,12 +10,13 @@ services:
     tty: true
   postgis:
     image: postgis/postgis
+    command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: hunter2
       POSTGRES_DB: experiment
-    logging:
-      driver: none
+    # logging:
+    #   driver: none
   pgweb:
     container_name: pgweb
     image: sosedoff/pgweb

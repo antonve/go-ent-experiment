@@ -8,6 +8,7 @@ import (
 
 	"github.com/antonve/go-ent-experiment/ent"
 	"github.com/antonve/go-ent-experiment/ent/schema"
+	"github.com/paulmach/orb"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
@@ -48,8 +49,23 @@ func ExamplePostGIS() {
 	}
 	fmt.Println("restaurants length", len(restaurants))
 
+	ebisu := orb.Point{35.64699709191131, 139.71000533635765}
+
+	query := client.Restaurant.Query().
+		Where(func(s *entsql.Selector) {
+			s.Where(entsql.ExprP("ST_Distance(location, ST_SetSRID(ST_MakePoint($1, $2), 4326), false) < $3", ebisu[0], ebisu[1], 300.0))
+		})
+
+	ebisuRestaurants := query.AllX(ctx)
+
+	for _, r := range ebisuRestaurants {
+		fmt.Println(r.Name)
+	}
+
 	// Output:
 	// restaurants length 4
+	// CoCo Ichibanya Ebisu
+	// SHAKE SHACK Ebisu
 }
 
 func createRestaurant(client *ent.Client, name string, long, lat float64) *ent.Restaurant {
