@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  dev:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/code
+    working_dir: /code
+    tty: true
+  postgis:
+    image: postgis/postgis
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: hunter2
+      POSTGRES_DB: experiment
+    logging:
+      driver: none
+  pgweb:
+    container_name: pgweb
+    image: sosedoff/pgweb
+    ports:
+      - '8081:8081'
+    links:
+      - postgis:postgis
+    environment:
+      - DATABASE_URL=postgres://root:hunter2@postgis:5432/experiment?sslmode=disable
+    depends_on:
+      - postgis
