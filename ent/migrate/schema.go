@@ -28,6 +28,18 @@ var (
 			},
 		},
 	}
+	// RestaurantsColumns holds the columns for the "restaurants" table.
+	RestaurantsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "location", Type: field.TypeOther, SchemaType: map[string]string{"postgres": "geometry(point, 4326)"}},
+	}
+	// RestaurantsTable holds the schema information for the "restaurants" table.
+	RestaurantsTable = &schema.Table{
+		Name:       "restaurants",
+		Columns:    RestaurantsColumns,
+		PrimaryKey: []*schema.Column{RestaurantsColumns[0]},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -45,6 +57,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		BooksTable,
+		RestaurantsTable,
 		UsersTable,
 	}
 )

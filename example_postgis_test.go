@@ -3,7 +3,6 @@ package main_test
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 
 	"github.com/antonve/go-ent-experiment/ent"
@@ -30,41 +29,8 @@ func ExamplePostGIS() {
 	}
 
 	// Truncate data
-	if _, err := client.User.Delete().Exec(ctx); err != nil {
-		log.Fatalf("failed truncating users: %v", err)
+	if _, err := client.Restaurant.Delete().Exec(ctx); err != nil {
+		log.Fatalf("failed restaurants users: %v", err)
 	}
-	if _, err := client.Book.Delete().Exec(ctx); err != nil {
-		log.Fatalf("failed truncating users: %v", err)
-	}
-
-	user1, err := client.User.Create().
-		SetUsername("anton").
-		SetDisplayName("io").
-		Save(ctx)
-	if err != nil {
-		log.Fatalf("failed to create a user: %v", err)
-	}
-
-	_, err = client.Book.Create().
-		SetName("The Phoenix Project").
-		SetUser(user1).
-		Save(ctx)
-	if err != nil {
-		log.Fatalf("failed to create a book: %v", err)
-	}
-
-	_, err = client.Book.Create().
-		SetName("The Unicorn Project").
-		Save(ctx)
-	if err != nil {
-		log.Fatalf("failed to create a book: %v", err)
-	}
-
-	res, err := user1.QueryBooks().All(ctx)
-	if err != nil {
-		log.Fatalf("failed to query books: %v", err)
-	}
-	fmt.Println(res[0].Name)
 	// Output:
-	// The Phoenix Project
 }

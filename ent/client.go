@@ -10,6 +10,7 @@ import (
 	"github.com/antonve/go-ent-experiment/ent/migrate"
 
 	"github.com/antonve/go-ent-experiment/ent/book"
+	"github.com/antonve/go-ent-experiment/ent/restaurant"
 	"github.com/antonve/go-ent-experiment/ent/user"
 
 	"entgo.io/ent/dialect"
@@ -24,6 +25,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Book is the client for interacting with the Book builders.
 	Book *BookClient
+	// Restaurant is the client for interacting with the Restaurant builders.
+	Restaurant *RestaurantClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -40,6 +43,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Book = NewBookClient(c.config)
+	c.Restaurant = NewRestaurantClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -72,10 +76,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Book:   NewBookClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:        ctx,
+		config:     cfg,
+		Book:       NewBookClient(cfg),
+		Restaurant: NewRestaurantClient(cfg),
+		User:       NewUserClient(cfg),
 	}, nil
 }
 
@@ -93,10 +98,11 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Book:   NewBookClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:        ctx,
+		config:     cfg,
+		Book:       NewBookClient(cfg),
+		Restaurant: NewRestaurantClient(cfg),
+		User:       NewUserClient(cfg),
 	}, nil
 }
 
@@ -127,6 +133,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Book.Use(hooks...)
+	c.Restaurant.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
@@ -234,6 +241,96 @@ func (c *BookClient) QueryUser(b *Book) *UserQuery {
 // Hooks returns the client hooks.
 func (c *BookClient) Hooks() []Hook {
 	return c.hooks.Book
+}
+
+// RestaurantClient is a client for the Restaurant schema.
+type RestaurantClient struct {
+	config
+}
+
+// NewRestaurantClient returns a client for the Restaurant from the given config.
+func NewRestaurantClient(c config) *RestaurantClient {
+	return &RestaurantClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `restaurant.Hooks(f(g(h())))`.
+func (c *RestaurantClient) Use(hooks ...Hook) {
+	c.hooks.Restaurant = append(c.hooks.Restaurant, hooks...)
+}
+
+// Create returns a create builder for Restaurant.
+func (c *RestaurantClient) Create() *RestaurantCreate {
+	mutation := newRestaurantMutation(c.config, OpCreate)
+	return &RestaurantCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Restaurant entities.
+func (c *RestaurantClient) CreateBulk(builders ...*RestaurantCreate) *RestaurantCreateBulk {
+	return &RestaurantCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Restaurant.
+func (c *RestaurantClient) Update() *RestaurantUpdate {
+	mutation := newRestaurantMutation(c.config, OpUpdate)
+	return &RestaurantUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RestaurantClient) UpdateOne(r *Restaurant) *RestaurantUpdateOne {
+	mutation := newRestaurantMutation(c.config, OpUpdateOne, withRestaurant(r))
+	return &RestaurantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RestaurantClient) UpdateOneID(id int) *RestaurantUpdateOne {
+	mutation := newRestaurantMutation(c.config, OpUpdateOne, withRestaurantID(id))
+	return &RestaurantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Restaurant.
+func (c *RestaurantClient) Delete() *RestaurantDelete {
+	mutation := newRestaurantMutation(c.config, OpDelete)
+	return &RestaurantDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *RestaurantClient) DeleteOne(r *Restaurant) *RestaurantDeleteOne {
+	return c.DeleteOneID(r.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *RestaurantClient) DeleteOneID(id int) *RestaurantDeleteOne {
+	builder := c.Delete().Where(restaurant.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RestaurantDeleteOne{builder}
+}
+
+// Query returns a query builder for Restaurant.
+func (c *RestaurantClient) Query() *RestaurantQuery {
+	return &RestaurantQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Restaurant entity by its id.
+func (c *RestaurantClient) Get(ctx context.Context, id int) (*Restaurant, error) {
+	return c.Query().Where(restaurant.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RestaurantClient) GetX(ctx context.Context, id int) *Restaurant {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *RestaurantClient) Hooks() []Hook {
+	return c.hooks.Restaurant
 }
 
 // UserClient is a client for the User schema.

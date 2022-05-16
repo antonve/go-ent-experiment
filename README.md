@@ -25,4 +25,7 @@ $ docker compose up -d
 
 # run tests
 $ docker compose exec dev ./run-test.sh
+
+# Generate entities
+$ docker compose exec dev bash -c 'go generate ./ent'
 ```

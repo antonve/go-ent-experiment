@@ -9,5 +9,8 @@ import (
 // Book is the predicate function for book builders.
 type Book func(*sql.Selector)
 
+// Restaurant is the predicate function for restaurant builders.
+type Restaurant func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
