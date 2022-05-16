@@ -9,12 +9,14 @@ Personal opinion about `ent.`
 * Excellent documentation
 * GraphQL integration (have not tried)
 * Can hook into the library with custom code
+* Type overrides for special cases like spatial types works well, although one needs to write quite a bit of extra code to make it work
 
 ## Cons
 
 * Not a fan of how you need to query data. Requires learning a whole ORM in order to work with a database, which has limited transferable knowledge to other projects
 * The long chaining of functions is not something often seen in Golang, and feels out of place. `go fmt` doesn't force these on a newline which requires manual formatting or hard-to-read code
 * Seems focussed on graph-like data structures, which might not be what you want (at least the naming of things like edges)
+* Kind of verbose and unfriendly developer experience when doing more complicated spatial queries
 
 
 ## Development
