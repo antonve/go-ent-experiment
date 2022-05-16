@@ -16,3 +16,13 @@ Personal opinion about `ent.`
 * The long chaining of functions is not something often seen in Golang, and feels out of place. `go fmt` doesn't force these on a newline which requires manual formatting or hard-to-read code
 * Seems focussed on graph-like data structures, which might not be what you want (at least the naming of things like edges)
 
+
+## Development
+
+```bash
+# start dev environment
+$ docker compose up -d
+
+# run tests
+$ docker compose exec dev ./run-test.sh
+```
